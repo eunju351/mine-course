@@ -15,8 +15,8 @@
 <meta property="og:type" content="website">
 <meta property="og:title" content="AI 동화책 출판 · 나만의 동화책 1권 완성">
 <meta property="og:description" content="30~70대 대상 · 2026년 10월 14일(수) · 3교시 실습 · 이야기부터 그림·출판까지 · 강사 마인쌤">
-<meta property="og:url" content="https://mine.vercel.app/">
-<meta property="og:image" content="https://mine.vercel.app/og.png">
+<meta property="og:url" content="https://eunju351-mine-course.vercel.app/">
+<meta property="og:image" content="https://eunju351-mine-course.vercel.app/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
 <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
@@ -122,6 +122,109 @@ footer nav{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;margin-bo
 footer nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 .3rem;font-weight:700}
 
 @media (prefers-reduced-motion:reduce){ .entry{transition:none} .entry:hover{transform:none} }
+
+/* ===== Gen Z 카오스(맥시멀리즘) + 클레이모피즘 =====
+   카오스: 스티커 · 기울기 · 흐르는 띠 · 점무늬 · 큰 글자 (장식만, 본문은 똑바로)
+   클레이: 둥근 모서리 + 바깥 그림자 + 안쪽 밝은/어두운 그림자로 볼록한 점토 느낌 */
+:root{
+  --clay:#FFFFFF; --clay-2:#FBF3D5;
+  --clay-out:12px 14px 28px rgba(60,45,0,.16), 3px 4px 8px rgba(0,0,0,.06);
+  --clay-in:inset -7px -8px 14px rgba(0,0,0,.07), inset 7px 8px 14px rgba(255,255,255,.95);
+  --dot:rgba(0,0,0,.09); --stroke:#111111;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --clay:#232323; --clay-2:#2B2715;
+    --clay-out:12px 14px 28px rgba(0,0,0,.55), 3px 4px 8px rgba(0,0,0,.4);
+    --clay-in:inset -7px -8px 14px rgba(0,0,0,.35), inset 7px 8px 14px rgba(255,255,255,.07);
+    --dot:rgba(255,255,255,.08);
+  }
+}
+html{overflow-x:clip}
+body{background-color:var(--bg);background-image:radial-gradient(var(--dot) 1.4px, transparent 1.6px);background-size:22px 22px}
+section{position:relative;overflow-x:clip}
+
+/* 히어로: 머스타드 + 체크무늬 + 스티커 */
+.hero{position:relative;overflow:hidden;padding:4.6rem 0 4.2rem;
+  background-color:var(--accent);
+  background-image:linear-gradient(45deg,rgba(0,0,0,.06) 25%,transparent 25%,transparent 75%,rgba(0,0,0,.06) 75%),
+                   linear-gradient(45deg,rgba(0,0,0,.06) 25%,transparent 25%,transparent 75%,rgba(0,0,0,.06) 75%);
+  background-size:40px 40px;background-position:0 0,20px 20px}
+.hero .wrap{position:relative}
+.hero h1{font-size:clamp(2.6rem,11vw,5rem);line-height:1.08;letter-spacing:-.03em;
+  text-shadow:4px 4px 0 #FFFFFF, 7px 7px 0 #111111}
+.hero h1::after{width:5rem;height:6px;border-radius:99px}
+.hero .kicker{display:inline-block;background:#111111;color:#F6C744;padding:.35rem .9rem;border-radius:99px;transform:rotate(-2deg);letter-spacing:.2em}
+.hero .lead{font-size:1.12rem;font-weight:800;color:#111111}
+.meta span{background:#FFFFFF;border:2.5px solid #111111;box-shadow:3px 3px 0 #111111;font-weight:800}
+.meta span:nth-child(1){transform:rotate(-2deg)} .meta span:nth-child(2){transform:rotate(1.5deg)} .meta span:nth-child(3){transform:rotate(-1deg)}
+
+/* 스티커 (장식 · 스크린리더 제외) */
+.sticker{position:absolute;z-index:2;display:inline-flex;align-items:center;justify-content:center;font-weight:900;line-height:1.1;text-align:center;
+  border-radius:999px;background:#FFFFFF;color:#111111;border:3px solid #111111;box-shadow:4px 4px 0 #111111;pointer-events:none;user-select:none}
+.st1{top:-2.6rem;left:.2rem;padding:.4rem .9rem;font-size:.95rem;transform:rotate(-12deg)}
+.st2{top:-2.2rem;right:.4rem;width:5.2rem;height:5.2rem;font-size:.85rem;background:#111111;color:#F6C744;transform:rotate(14deg)}
+.st3{bottom:-2.8rem;right:8%;padding:.35rem .8rem;font-size:1.4rem;transform:rotate(8deg)}
+.st4{bottom:-2.6rem;left:6%;padding:.35rem .8rem;font-size:1.4rem;transform:rotate(-9deg)}
+.deco{position:absolute;font-size:2.4rem;pointer-events:none;user-select:none;filter:drop-shadow(3px 3px 0 rgba(0,0,0,.18))}
+
+/* 흐르는 띠 */
+.ticker-wrap{overflow:hidden;padding:.9rem 0 .3rem;margin-top:-.9rem;position:relative;z-index:3}
+.ticker{background:#111111;color:#F6C744;overflow:hidden;white-space:nowrap;transform:rotate(-1.2deg);margin:-.6rem -2rem 0;
+  border-top:3px solid #F6C744;border-bottom:3px solid #F6C744;position:relative;z-index:3}
+.ticker-track{display:inline-flex;gap:2rem;padding:.7rem 0;font-weight:900;font-size:1.05rem;letter-spacing:.04em;animation:tick 26s linear infinite}
+.ticker-track span{flex:0 0 auto}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+
+/* 섹션 제목: 스티커형 키커 + 밑줄 형광펜 */
+.sec-kicker{display:inline-block;background:var(--accent);color:#111111;padding:.25rem .8rem;border-radius:99px;transform:rotate(-2deg);
+  box-shadow:3px 3px 0 var(--stroke)}
+section:nth-of-type(even) .sec-kicker{transform:rotate(2deg)}
+h2{font-size:clamp(1.6rem,5vw,2.2rem);letter-spacing:-.02em}
+h2 .hl, main h2{background:linear-gradient(transparent 62%, rgba(246,199,68,.75) 62%);display:inline;box-decoration-break:clone;-webkit-box-decoration-break:clone}
+.phead h2, main h2{display:inline}
+main h2 + *{margin-top:1.1rem}
+.phead{margin-bottom:.8rem}
+
+/* 클레이 패널 */
+.card, .profile, .entry, .pitem, table.tbl{background:var(--clay);border-radius:1.6rem;box-shadow:var(--clay-out), var(--clay-in)}
+table.tbl{border-radius:1.6rem}
+table.tbl thead th{background:#111111}
+.cards{gap:1.3rem}
+.card{padding:1.4rem 1.3rem 1.5rem}
+.card:nth-child(1){transform:rotate(-1.2deg)} .card:nth-child(2){transform:rotate(.8deg);background:var(--clay-2)} .card:nth-child(3){transform:rotate(-.6deg)}
+.card .n{display:inline-block;align-self:flex-start;background:#111111;color:#F6C744;padding:.2rem .7rem;border-radius:99px;letter-spacing:.08em}
+.card .t{font-size:1.3rem}
+.entry{transition:transform .2s, box-shadow .2s}
+.entry:nth-child(1){background:#111111;color:#FFFFFF;transform:rotate(-1deg)}
+.entry:nth-child(1) .part, .entry:nth-child(1) .desc{color:#DADADA}
+.entry:nth-child(2){background:var(--accent);color:#111111;transform:rotate(1deg)}
+.entry:nth-child(2) .part, .entry:nth-child(2) .desc{color:#3A3000}
+.entry:hover{transform:rotate(0) translateY(-4px) scale(1.02);box-shadow:var(--clay-out), var(--clay-in)}
+.entry .title{font-size:1.35rem}
+.avatar{box-shadow:inset -5px -6px 10px rgba(0,0,0,.14), inset 5px 6px 10px rgba(255,255,255,.7), 4px 5px 10px rgba(0,0,0,.15);width:5rem;height:5rem;font-size:1.9rem}
+.pitem .px{background:var(--clay-2);border-left:none;border-radius:1rem;box-shadow:inset 3px 3px 8px rgba(0,0,0,.07), inset -3px -3px 8px rgba(255,255,255,.6)}
+
+/* 클레이 버튼 */
+.btn, .pbtn{box-shadow:5px 6px 14px rgba(0,0,0,.2), inset -3px -4px 8px rgba(0,0,0,.25), inset 3px 4px 8px rgba(255,255,255,.25);border:none}
+.btn.primary{background:#111111}
+.btn.ghost{background:#FFFFFF;color:#111111;box-shadow:5px 6px 14px rgba(0,0,0,.14), inset -3px -4px 8px rgba(0,0,0,.08), inset 3px 4px 8px rgba(255,255,255,.9)}
+.btn:hover, .pbtn:hover{transform:translateY(-2px)}
+.pbtn.ghost{background:var(--clay);color:var(--ink);box-shadow:var(--clay-out), var(--clay-in)}
+footer{border-top:none}
+
+/* 좁은 화면: 스티커 크기 줄이기 */
+@media (max-width:520px){
+  .st2{width:4.2rem;height:4.2rem;font-size:.72rem;top:-2.8rem;right:-.2rem}
+  .st1{top:-3rem;font-size:.8rem}
+  .deco{font-size:1.8rem}
+}
+/* 움직임 줄이기 설정 존중 */
+@media (prefers-reduced-motion:reduce){
+  .ticker-track{animation:none}
+  .entry, .btn, .pbtn{transition:none}
+  .entry:hover, .btn:hover, .pbtn:hover{transform:none}
+}
 </style>
 </head>
 <body>
@@ -129,20 +232,26 @@ footer nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 .3
 
 <header class="hero">
   <div class="wrap">
+    <span class="sticker st1" aria-hidden="true">✦ NEW 클래스</span>
+    <span class="sticker st2" aria-hidden="true">3교시 완성!</span>
     <div class="kicker">나만의 동화책 1권 완성 과정</div>
     <h1>AI 동화책 출판</h1>
     <p class="lead">30~70대를 위한 AI 동화책 만들기 · 3교시 실습 중심</p>
     <div class="meta"><span>📅 2026년 10월 14일(수)</span><span>👥 30~70대</span><span>👤 강사 마인쌤</span></div>
+    <span class="sticker st3" aria-hidden="true">🐻</span>
+    <span class="sticker st4" aria-hidden="true">📚</span>
     <div class="cta">
       <a class="btn primary" href="slides.html" target="_blank" rel="noopener">▶ 슬라이드 입장</a>
       <a class="btn ghost" href="#prompts">📋 실습 프롬프트</a>
     </div>
   </div>
 </header>
+<div class="ticker-wrap" aria-hidden="true"><div class="ticker"><div class="ticker-track"><span>AI 동화책 출판</span><span>✦</span><span>30~70대 환영</span><span>✦</span><span>10월 14일(수)</span><span>✦</span><span>3교시 실습</span><span>✦</span><span>나만의 동화책 1권</span><span>✦</span><span>그림 실력 필요 없음</span><span>✦</span><span>AI 동화책 출판</span><span>✦</span><span>30~70대 환영</span><span>✦</span><span>10월 14일(수)</span><span>✦</span><span>3교시 실습</span><span>✦</span><span>나만의 동화책 1권</span><span>✦</span><span>그림 실력 필요 없음</span><span>✦</span></div></div></div>
 
 <main id="main">
   <section id="info" aria-labelledby="infoTitle">
     <div class="wrap">
+      <span class="deco" aria-hidden="true" style="top:1.6rem;right:1.2rem;transform:rotate(12deg)">🗓️</span>
       <div class="sec-kicker">대상 · 일정</div>
       <h2 id="infoTitle">수업 안내</h2>
       <table class="tbl">
@@ -159,6 +268,7 @@ footer nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 .3
 
   <section id="curriculum" aria-labelledby="curTitle">
     <div class="wrap">
+      <span class="deco" aria-hidden="true" style="top:1.4rem;right:1.4rem;transform:rotate(-10deg)">🎨</span>
       <div class="sec-kicker">커리큘럼</div>
       <h2 id="curTitle">3교시 진행</h2>
       <div class="cards">
@@ -171,6 +281,7 @@ footer nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 .3
 
   <section id="instructor" aria-labelledby="insTitle">
     <div class="wrap">
+      <span class="deco" aria-hidden="true" style="top:1.6rem;right:1.4rem;transform:rotate(18deg)">✏️</span>
       <div class="sec-kicker">강사 소개</div>
       <h2 id="insTitle">강사 마인쌤</h2>
       <div class="profile">
@@ -190,6 +301,7 @@ footer nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 .3
 
   <section id="prompts" aria-labelledby="pTitle">
     <div class="wrap">
+      <span class="deco" aria-hidden="true" style="top:1.2rem;right:50%;transform:rotate(-8deg)">💬</span>
       <div class="sec-kicker">자료 · 프롬프트</div>
       <div class="phead">
         <h2 id="pTitle">📋 실습 프롬프트</h2>
@@ -203,6 +315,7 @@ footer nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 .3
 
   <section id="enter" aria-labelledby="enterTitle">
     <div class="wrap">
+      <span class="deco" aria-hidden="true" style="top:1.4rem;right:1.4rem;transform:rotate(10deg)">🚀</span>
       <div class="sec-kicker">수업 페이지</div>
       <h2 id="enterTitle">입장</h2>
       <div class="entry-grid">
@@ -285,7 +398,7 @@ footer nav a{display:inline-flex;align-items:center;min-height:44px;padding:0 .3
   }
 
   function download(name, text){
-    var blob = new Blob(['﻿' + text], { type: 'text/plain;charset=utf-8' });
+    var blob = new Blob(['\uFEFF' + text], { type: 'text/plain;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob); a.download = name;
     document.body.appendChild(a); a.click(); a.remove();

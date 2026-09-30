@@ -172,6 +172,34 @@ table.tbl td:first-child{color:var(--sub)}
     break-after:page;page-break-after:always;-webkit-print-color-adjust:exact;print-color-adjust:exact}
   #stage > .slide:last-child{break-after:auto;page-break-after:auto}
 }
+
+/* ===== Firebase 청중 동기화 (firebase/slides-firebase.html 방식) ===== */
+html.is-screen #stage{top:50%;width:min(100vw, 177.78vh)}
+html.is-screen #nav, html.is-screen #progress{display:none}
+#modeBadge{border:1px solid #444;border-radius:99px;padding:4px 12px;font-size:12.5px;font-weight:700;color:#DDDDDD;white-space:nowrap}
+#modeBadge.follow{background:#FFFFFF;color:#111111;border-color:#FFFFFF}
+.conn{border:1px solid #444;border-radius:99px;padding:4px 12px;font-size:12.5px;font-weight:700;color:#DDDDDD;white-space:nowrap}
+#nav button[aria-pressed="true"]{background:#FFFFFF;color:#111111}
+#nav [hidden]{display:none!important}
+@media (max-width:760px){ #connBadge{display:none} }
+.fb-banner{position:fixed;left:0;right:0;top:0;z-index:300;background:#F6C744;color:#111111;font-size:14px;font-weight:700;line-height:1.4;text-align:center;padding:8px 12px}
+.fb-banner[hidden]{display:none}
+.login{position:fixed;inset:0;z-index:600;background:rgba(10,10,10,.8);display:flex;align-items:center;justify-content:center;padding:16px}
+.login[hidden]{display:none}
+.login-box{background:#FFFFFF;color:#111111;border-radius:14px;padding:24px;width:min(360px,100%);display:flex;flex-direction:column;gap:12px}
+.login-box h2{font-size:20px}
+.login-box label{display:flex;flex-direction:column;gap:4px;font-size:14px;font-weight:700}
+.login-box input{font:inherit;font-weight:500;border:1px solid #BBBBBB;border-radius:8px;padding:10px 12px;min-height:44px}
+.login-box .row{display:flex;gap:8px}
+.login-box button{font:inherit;font-weight:800;min-height:44px;padding:0 16px;border-radius:8px;border:1px solid #BBBBBB;background:#FFFFFF;cursor:pointer}
+.login-box button.primary{background:#111111;color:#FFFFFF;border-color:#111111}
+.login-box button:focus-visible, .login-box input:focus-visible{outline:2px solid #111111;outline-offset:2px}
+.login-box .err{color:#B71C1C;font-size:13px;font-weight:700;min-height:1.2em}
+/* 강사가 PDF를 막으면 인쇄 대신 안내 문구 */
+@media print{
+  html.no-pdf #stage{display:none!important}
+  html.no-pdf body::before{content:"PDF 저장이 꺼져 있음 · 강사에게 문의";display:block;padding:2rem;font-size:14pt;color:#000000}
+}
 </style>
 </head>
 <body>
@@ -862,8 +890,12 @@ table.tbl td:first-child{color:var(--sub)}
   <button type="button" id="navPrev" aria-label="이전 슬라이드">◀</button>
   <span id="counter" aria-live="polite">1 / 45</span>
   <button type="button" id="navNext" aria-label="다음 슬라이드">▶</button>
+  <span id="modeBadge" hidden></span>
+  <span id="connBadge" class="conn" role="status" hidden></span>
   <span class="grow"></span>
   <span class="hint hide-sm">← → 이동 · G 전체보기 · P PDF</span>
+  <button type="button" id="lockBtn" aria-pressed="true" hidden>🔒 잠금 ON</button>
+  <button type="button" id="pdfBtn" aria-pressed="true" hidden>PDF ON</button>
   <button type="button" id="gridBtn" aria-haspopup="dialog" aria-controls="gridOverlay">▦ 전체 보기</button>
   <button type="button" id="printBtn" class="hide-sm">⎙ PDF 저장</button>
 </nav>
@@ -873,10 +905,22 @@ table.tbl td:first-child{color:var(--sub)}
   <div class="grid-list" id="gridList"></div>
 </div>
 
+<div id="fbBanner" class="fb-banner" hidden>Firebase 설정 전 · 자유 열람 모드 · firebase-config.js 입력 후 동기화</div>
+
+<div class="login" id="login" hidden role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+  <form class="login-box" id="loginForm">
+    <h2 id="loginTitle">강사 로그인</h2>
+    <label>이메일<input id="lgEmail" type="email" autocomplete="username" required></label>
+    <label>비밀번호<input id="lgPw" type="password" autocomplete="current-password" required></label>
+    <p class="err" id="lgErr" role="alert"></p>
+    <div class="row"><button type="submit" class="primary">로그인</button><button type="button" id="lgClose">닫기</button></div>
+  </form>
+</div>
+
 <script>
 (function(){
   /* ▼ 내 강의 고유 접두사로 변경 (예: 'ai0927_') */
-  var LS = 'mykit_';
+  var LS = 'mine1014_';
 
   var stage = document.getElementById('stage');
   var slides = Array.prototype.slice.call(stage.querySelectorAll(':scope > section.slide'));
@@ -906,6 +950,24 @@ table.tbl td:first-child{color:var(--sub)}
   var minis = [];
   var lastFocus = null;
 
+  /* 청중 동기화 공유 상태 · Firebase 모듈(아래)이 채움 · 모듈이 없거나 설정 전이면 자유 열람 */
+  var D = window.DECK = {
+    synced: false,      /* Firebase 연결됨 */
+    isAdmin: false,     /* ?admin 로그인 + admins 목록 확인 */
+    isView: params.has('view'),     /* 복습용 · 동기화 없이 각자 넘김 */
+    isScreen: params.has('screen'), /* 화면공유용 · 메뉴 없이 강사 따라가기 */
+    locked: true,       /* 잠금 ON = 청중이 강사 화면을 따라감 */
+    pdfOk: true,        /* PDF ON = 청중 PDF 저장 허용 */
+    onAdminMove: null
+  };
+  function canNav(){ return D.isAdmin || D.isView || !D.synced || !D.locked; }
+  function navigate(i){
+    if (!canNav()) return;
+    show(i);
+    if (D.isAdmin && D.onAdminMove) D.onAdminMove(idx);
+  }
+  function doPrint(){ if (D.pdfOk || D.isAdmin) window.print(); }
+
   function show(i){
     idx = Math.max(0, Math.min(total - 1, i));
     slides.forEach(function(s, n){
@@ -914,8 +976,8 @@ table.tbl td:first-child{color:var(--sub)}
     });
     progressEl.style.width = ((idx + 1) / total * 100) + '%';
     counterEl.textContent = (idx + 1) + ' / ' + total;
-    navPrev.disabled = idx === 0;
-    navNext.disabled = idx === total - 1;
+    navPrev.disabled = !canNav() || idx === 0;
+    navNext.disabled = !canNav() || idx === total - 1;
     minis.forEach(function(m, n){ m.classList.toggle('current', n === idx); });
     lsSet(STORAGE_KEY, String(idx));
   }
@@ -946,25 +1008,25 @@ table.tbl td:first-child{color:var(--sub)}
     /* 버튼에 포커스가 있을 때 스페이스·엔터는 버튼 동작에 양보 */
     var onButton = t && t.closest && t.closest('button, a');
     if ((e.key === ' ' || e.key === 'Enter') && onButton) return;
-    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); show(idx + 1); }
-    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); show(idx - 1); }
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'PageDown') { e.preventDefault(); navigate(idx + 1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'PageUp') { e.preventDefault(); navigate(idx - 1); }
     else if (e.key === 'g' || e.key === 'G' || e.key === 'ㅎ') { openGrid(); }
-    else if (e.key === 'p' || e.key === 'P' || e.key === 'ㅔ') { e.preventDefault(); window.print(); }
-    else if (e.key === 'Home') { show(0); }
-    else if (e.key === 'End') { show(total - 1); }
+    else if (e.key === 'p' || e.key === 'P' || e.key === 'ㅔ') { e.preventDefault(); doPrint(); }
+    else if (e.key === 'Home') { navigate(0); }
+    else if (e.key === 'End') { navigate(total - 1); }
   });
 
   /* 무대 클릭: 오른쪽 절반 다음 · 왼쪽 절반 이전 (버튼·링크·프롬프트 카드 제외) */
   stage.addEventListener('click', function(e){
     if (e.target.closest('button, a, .prompt-card')) return;
     var rect = stage.getBoundingClientRect();
-    if (e.clientX - rect.left > rect.width / 2) show(idx + 1); else show(idx - 1);
+    if (e.clientX - rect.left > rect.width / 2) navigate(idx + 1); else navigate(idx - 1);
   });
-  navPrev.addEventListener('click', function(){ show(idx - 1); });
-  navNext.addEventListener('click', function(){ show(idx + 1); });
+  navPrev.addEventListener('click', function(){ navigate(idx - 1); });
+  navNext.addEventListener('click', function(){ navigate(idx + 1); });
   document.getElementById('gridBtn').addEventListener('click', openGrid);
   document.getElementById('gridClose').addEventListener('click', closeGrid);
-  document.getElementById('printBtn').addEventListener('click', function(){ window.print(); });
+  document.getElementById('printBtn').addEventListener('click', doPrint);
 
   /* 타이머: 벽시계 기준 (탭이 뒤로 가도 시간이 밀리지 않음) */
   function initTimer(el){
@@ -1077,13 +1139,118 @@ table.tbl td:first-child{color:var(--sub)}
     inner.appendChild(copy);
     mini.appendChild(inner);
     mini.appendChild(num);
-    mini.addEventListener('click', function(){ show(n); closeGrid(); });
-    mini.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); show(n); closeGrid(); } });
+    mini.addEventListener('click', function(){ navigate(n); closeGrid(); });
+    mini.addEventListener('keydown', function(e){ if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate(n); closeGrid(); } });
     gridList.appendChild(mini);
     minis.push(mini);
   });
+  /* 모듈에서 쓰는 함수 공개 */
+  D.show = show;
+  D.getIdx = function(){ return idx; };
+  D.total = total;
+  D.refresh = function(){ show(idx); };
+  if (D.isScreen) document.documentElement.classList.add('is-screen');
+
   show(idx);
 })();
+</script>
+
+<!-- ===== Firebase 청중 동기화 =====
+  주소별 역할: slides.html = 청중(잠금 ON이면 강사 따라가기) · ?admin = 강사 로그인 · ?screen = 화면공유 · ?view = 복습
+  firebase-config.js 를 채우기 전, 또는 Firebase를 불러오지 못하면 지금처럼 자유 열람 -->
+<script src="firebase-config.js" onerror="void 0"></script>
+<script type="module">
+const D = window.DECK;
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const WANT_ADMIN = params.has('admin');
+const hint = document.querySelector('#nav .hint');
+
+function badge(){
+  const b = $('modeBadge');
+  let text = '', follow = false;
+  if (D.isAdmin) text = '강사';
+  else if (!D.synced || D.isView) text = WANT_ADMIN ? '자유 열람' : '';
+  else if (D.locked) { text = '강사 화면 따라가는 중'; follow = true; }
+  else text = '자유 이동';
+  b.textContent = text; b.hidden = !text; b.classList.toggle('follow', follow);
+  $('lockBtn').hidden = $('pdfBtn').hidden = !D.isAdmin;
+  $('lockBtn').textContent = D.locked ? '🔒 잠금 ON' : '🔓 잠금 OFF';
+  $('lockBtn').setAttribute('aria-pressed', String(D.locked));
+  $('pdfBtn').textContent = D.pdfOk ? 'PDF ON' : 'PDF OFF';
+  $('pdfBtn').setAttribute('aria-pressed', String(D.pdfOk));
+}
+function applyPdf(ok){
+  D.pdfOk = !!ok;
+  const show = D.pdfOk || D.isAdmin;
+  $('printBtn').hidden = !show;
+  document.documentElement.classList.toggle('no-pdf', !show);
+  if (hint) hint.textContent = show ? '← → 이동 · G 전체보기 · P PDF' : '← → 이동 · G 전체보기';
+}
+function flash(msg){ const c = $('connBadge'); c.hidden = false; c.textContent = msg; }
+function refresh(){ badge(); D.refresh(); }
+
+async function start(){
+  /* 파일을 더블클릭해 연 경우(file://)나 설정 전이면 Firebase를 부르지 않고 자유 열람 */
+  const cfg = window.FIREBASE_CONFIG;
+  if (location.protocol === 'file:' || !cfg || typeof cfg.apiKey !== 'string' || !cfg.apiKey || cfg.apiKey.includes('[')) return false;
+  let mod;
+  try { mod = await import('./firebase-sync.js'); } catch (e) { return false; }
+  if (!mod.isConfigured(window.FIREBASE_CONFIG)) return false;
+  if (D.isView) return true;
+  let sync;
+  try { sync = mod.createSync(window.FIREBASE_CONFIG, window.DECK_ID || 'mine-course-1014'); } catch (e) { return false; }
+
+  D.synced = true;
+  D.onAdminMove = (i) => sync.setSlide(i).catch(() => flash('저장 실패 · 강사 권한 확인'));
+  let last = null, online = false, viewers = null, viewersOn = false;
+
+  sync.onState((s) => {
+    if (!s) { D.synced = false; flash('상태 읽기 실패 · 규칙 확인 · 자유 열람'); refresh(); return; }
+    D.synced = true; last = s; D.locked = !!s.locked; applyPdf(s.pdf);
+    if (!D.isAdmin && (D.isScreen || D.locked)) D.show(s.slide | 0); else refresh();
+  });
+  const conn = () => {
+    const c = $('connBadge');
+    if (!(D.isAdmin || D.isScreen)) { c.hidden = online; c.textContent = '연결 끊김 · 재연결 중'; return; }
+    c.hidden = false;
+    c.textContent = (online ? '● 연결' : '○ 끊김') + (viewers != null ? ' · 접속 ' + viewers + '명' : '');
+  };
+  sync.onConnection((on) => { online = on; conn(); });
+  if (!D.isScreen && !WANT_ADMIN) sync.joinViewers();
+
+  sync.onAdmin((admin, user) => {
+    D.isAdmin = admin;
+    if (admin) {
+      $('login').hidden = true;
+      if (last) D.show(last.slide | 0);
+      if (!viewersOn) { viewersOn = true; sync.onViewers((n) => { viewers = n; conn(); }); }
+    } else if (WANT_ADMIN && user) {
+      $('lgErr').textContent = '강사 목록(admins)에 없는 계정';
+      $('login').hidden = false;
+    }
+    applyPdf(D.pdfOk); conn(); refresh();
+  });
+
+  if (WANT_ADMIN) setTimeout(() => { if (!D.isAdmin) { $('login').hidden = false; $('lgEmail').focus(); } }, 900);
+  $('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); $('lgErr').textContent = '';
+    try { await sync.login($('lgEmail').value.trim(), $('lgPw').value); }
+    catch (err) { $('lgErr').textContent = '로그인 실패 · 이메일·비밀번호 확인'; }
+  });
+  $('lockBtn').addEventListener('click', () => sync.setLock(!D.locked).catch(() => flash('저장 실패')));
+  $('pdfBtn').addEventListener('click', () => sync.setPdf(!D.pdfOk).catch(() => flash('저장 실패')));
+  return true;
+}
+
+$('lgClose').addEventListener('click', () => { $('login').hidden = true; });
+start().then((ok) => {
+  if (!ok) {
+    D.synced = false;
+    if (WANT_ADMIN) $('fbBanner').hidden = false;   /* 설정 전 안내는 강사 화면에만 */
+  }
+  refresh();
+});
 </script>
 </body>
 </html>
