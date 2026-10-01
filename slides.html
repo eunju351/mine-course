@@ -173,6 +173,13 @@ table.tbl td:first-child{color:var(--sub)}
   #stage > .slide:last-child{break-after:auto;page-break-after:auto}
 }
 
+/* 작은 무대(휴대폰 세로 등): 글자 크기는 그대로 · 여백과 간격만 줄여 한 화면에 맞춤 (AGENTS.md 3번) */
+@container (max-width: 520px){
+  .slide{padding:3cqi 4.4cqi}
+  .slide-content{gap:1.1cqi}
+  .bullets{gap:.8cqi}
+}
+
 /* ===== Firebase 청중 동기화 (firebase/slides-firebase.html 방식) ===== */
 html.is-screen #stage{top:50%;width:min(100vw, 177.78vh)}
 html.is-screen #nav, html.is-screen #progress{display:none}
