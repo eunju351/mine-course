@@ -966,7 +966,8 @@ html.is-screen #nav, html.is-screen #progress{display:none}
     show(i);
     if (D.isAdmin && D.onAdminMove) D.onAdminMove(idx);
   }
-  function doPrint(){ if (D.pdfOk || D.isAdmin) window.print(); }
+  /* 정책 스위치는 관리자 예외 없음: PDF OFF 이면 강사 화면도 똑같이 차단 */
+  function doPrint(){ if (D.pdfOk) window.print(); }
 
   function show(i){
     idx = Math.max(0, Math.min(total - 1, i));
@@ -1182,7 +1183,7 @@ function badge(){
 }
 function applyPdf(ok){
   D.pdfOk = !!ok;
-  const show = D.pdfOk || D.isAdmin;
+  const show = D.pdfOk;   /* 관리자 예외 없음 */
   $('printBtn').hidden = !show;
   document.documentElement.classList.toggle('no-pdf', !show);
   if (hint) hint.textContent = show ? '← → 이동 · G 전체보기 · P PDF' : '← → 이동 · G 전체보기';
