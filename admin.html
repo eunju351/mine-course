@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <!--
   관리자 제어판 시제품 · AI 동화책 출판 (2026-10-14 · 1~3교시)
-  - 서버 없음: 모든 상태를 이 브라우저 localStorage 한 칸(LS + 'admin')에만 저장
-  - 실제 연결: 「서버 연결 지점」 주석 위치를 Firebase Realtime Database 호출로 교체
+  - 두 가지 모드
+    1) 목업: firebase-config.js 를 채우기 전 · 모든 상태를 이 브라우저 localStorage 한 칸(LS + 'admin')에만 저장
+    2) Firebase: firebase-config.js 를 채우면 자동 전환 · 이메일 로그인 + admins 확인 · 실시간 구독·저장 (맨 아래 모듈 스크립트)
+  - 「서버 연결 지점」 주석 = Firebase 모드에서 실제로 읽고 쓰는 경로
     저장 위치: decks/mine-course-1014/ 아래 (주석에서는 이 앞부분 생략)
     쓰기 함수: slides.html 이 쓰는 firebase-sync.js 의 createSync() 에 timer·help·qa 등 함수 추가
   - 카드 순서 = 수업 중 손이 가는 순서 (로그인 → 준비 → 진행 → 잠금·PDF → 타이머 → 도움 → 휴식 → 질문 → 자료 → 후기 → 마무리)
@@ -154,11 +156,11 @@ tr.shown td:first-child{box-shadow:inset 4px 0 0 var(--ink)}
 <div id="gate">
   <form id="gateForm" autocomplete="off">
     <h1>강사 로그인 <span class="demo-badge">시제품</span></h1>
-    <p class="warn-box">시제품 전용 잠금 · 실제 보안 아님 · 비밀번호가 소스에 그대로 보임 · 실제 운영은 Firebase 로그인으로 교체</p>
+    <p class="warn-box" id="gateNote">시제품 전용 잠금 · 실제 보안 아님 · 비밀번호가 소스에 그대로 보임 · 실제 운영은 Firebase 로그인으로 교체</p>
     <!-- 서버 연결 지점: Firebase Authentication signInWithEmailAndPassword(email, pw)
          → admins/{UID} === true 확인 (firebase-sync.js onAdmin) · 목록에 없으면 「강사 목록에 없는 계정」 안내 -->
-    <label>이메일 (시제품: 아무 값)<input id="email" type="email" autocomplete="username" placeholder="teacher@example.com"></label>
-    <label>비밀번호 (시제품: 1234)<input id="pw" type="password" inputmode="numeric" autocomplete="current-password" required></label>
+    <label><span id="emailLbl">이메일 (시제품: 아무 값)</span><input id="email" type="email" autocomplete="username" placeholder="teacher@example.com"></label>
+    <label><span id="pwLbl">비밀번호 (시제품: 1234)</span><input id="pw" type="password" inputmode="numeric" autocomplete="current-password" required></label>
     <p id="gateErr" role="alert"></p>
     <button type="submit" class="btn">로그인</button>
   </form>
@@ -167,7 +169,7 @@ tr.shown td:first-child{box-shadow:inset 4px 0 0 var(--ink)}
 <!-- ============ 제어판 ============ -->
 <div class="wrap" id="panel" hidden>
   <header class="top">
-    <h1>관리자 제어판 <span class="demo-badge">시제품 · 서버 없음</span></h1>
+    <h1>관리자 제어판 <span class="demo-badge" id="modeBadge">시제품 · 서버 없음</span></h1>
     <div class="row">
       <a class="btn ghost" href="slides.html?admin" target="_blank" rel="noopener">슬라이드 새 창</a>
       <a class="btn ghost" href="index.html" target="_blank" rel="noopener">랜딩 새 창</a>
@@ -344,6 +346,8 @@ tr.shown td:first-child{box-shadow:inset 4px 0 0 var(--ink)}
 
 <p id="status" role="status" aria-live="polite"></p>
 
+<!-- Firebase 구성 · 채우기 전이면 목업 모드 -->
+<script src="firebase-config.js" onerror="void 0"></script>
 <script>
 (function(){
   /* slides.html 과 같은 접두사 */
@@ -351,8 +355,15 @@ tr.shown td:first-child{box-shadow:inset 4px 0 0 var(--ink)}
   var STATE_KEY = LS + 'admin';       /* 목업 상태 전체를 JSON 한 칸에 저장 */
   var AUTH_KEY = LS + 'admin_ok';     /* 세션 동안만 로그인 유지 */
 
-  /* 시제품 전용 비밀번호 · 보안 아님 (소스 보기로 누구나 확인 가능) */
+  /* 시제품 전용 비밀번호 · 보안 아님 (소스 보기로 누구나 확인 가능) · Firebase 모드에서는 쓰지 않음 */
   var DEMO_PW = '1234';
+
+  /* Firebase 모드 판단: 구성 값이 채워져 있고 파일 더블클릭(file://)이 아닐 때 */
+  var CFG = window.FIREBASE_CONFIG;
+  var A = window.ADMIN = {
+    fb: location.protocol !== 'file:' && !!CFG && typeof CFG.apiKey === 'string' && !!CFG.apiKey && CFG.apiKey.indexOf('[') === -1,
+    onSave: null, login: null, logout: null
+  };
 
   /* slides.html 의 aria-label 순서와 1:1 · 슬라이드 추가·삭제 시 함께 수정 */
   var TITLES = ['표지', '과정 전체 일정', '1교시 순서', 'AI 동화책의 매력', '제작 4단계와 AI 도구', '좋은 질문의 3요소', '프롬프트 비교', '실습 1 · 추억에서 동화 소재 찾기', '이야기 구조 4단계', '주인공 설정표', '실습 2 · 주인공과 줄거리 만들기', '그림책 쪽수 구성', '실습 3 · 장면별 원고 만들기', '1교시 정리', '휴식', '2교시 표지 · 그림 만들기', '2교시 순서', '그림 프롬프트 5요소', '그림 프롬프트 비교', '실습 1 · 첫 그림 만들기', '주인공 일관성의 중요성', '주인공 일관성 비교', '일관성 유지 4가지 방법', '캐릭터 고정 문구 만들기', '실습 2 · 주인공 캐릭터 시트', '실습 3 · 장면 삽화 만들기', '일관성 점검표', '자주 생기는 그림 오류', '2교시 정리', '휴식', '3교시 표지 · 편집과 출판', '3교시 순서', '실습 1 · 표지 그림 만들기', '쪽 배치 3가지', '글자 배치 비교', '실습 2 · 한 쪽 편집', '최종 점검표', '전자책과 종이책 비교', '출판 플랫폼 비교', '출판 절차', '실습 3 · 책 소개 글 쓰기', '저작권과 주의사항', '작품 발표', '4주 실행 계획', '마침'];
@@ -407,7 +418,10 @@ tr.shown td:first-child{box-shadow:inset 4px 0 0 var(--ink)}
 
   /* 서버 연결 지점: 실제 운영에서는 save() 대신 각 동작마다 Firebase update() 를 호출하고,
      onValue 구독으로 받은 값으로 S 를 갱신한 뒤 render() (여러 기기·탭이 같은 값을 봄) */
-  function save(){ lsSet(STATE_KEY, JSON.stringify(S)); }
+  function save(){
+    if (A.fb) { if (A.onSave) A.onSave(S); return; }   /* Firebase 모드: 바뀐 값만 서버로 */
+    lsSet(STATE_KEY, JSON.stringify(S));
+  }
 
   var statusEl = document.getElementById('status');
   function say(m){
@@ -426,12 +440,18 @@ tr.shown td:first-child{box-shadow:inset 4px 0 0 var(--ink)}
   document.getElementById('gateForm').addEventListener('submit', function(e){
     e.preventDefault();
     var pw = document.getElementById('pw').value;
+    if (A.fb) {
+      if (!A.login) { gateError('Firebase 연결 중 · 잠시 뒤 다시'); return; }
+      gateError(''); A.login(document.getElementById('email').value.trim(), pw); return;
+    }
     /* 서버 연결 지점: sync.login(email, pw) → onAdmin(isAdmin) 결과로 입장 여부 결정 */
     if (pw === DEMO_PW) { ssSet(AUTH_KEY, '1'); enterPanel(); }
-    else { document.getElementById('gateErr').textContent = '로그인 실패 · 이메일·비밀번호 확인'; }
+    else { gateError('로그인 실패 · 이메일·비밀번호 확인'); }
   });
+  function gateError(m){ document.getElementById('gateErr').textContent = m; }
   document.getElementById('logout').addEventListener('click', function(){
     ssSet(AUTH_KEY, null); panel.hidden = true; gate.hidden = false; document.getElementById('pw').value = '';
+    if (A.fb && A.logout) A.logout();
   });
   document.getElementById('resetDemo').addEventListener('click', function(){
     if (!confirm('데모 데이터를 처음 상태로 되돌릴까요?')) return;
@@ -700,7 +720,7 @@ tr.shown td:first-child{box-shadow:inset 4px 0 0 var(--ink)}
 
   /* 목업 접속자 수: 실제로는 viewers 구독 값 (firebase-sync.js onViewers) */
   setInterval(function(){
-    if (panel.hidden) return;
+    if (panel.hidden || A.fb) return;   /* Firebase 모드: viewers 구독 값 사용 */
     S.viewers = Math.max(0, Math.min(30, S.viewers + Math.round(Math.random() * 2 - 1)));
     if (S.viewers > S.peak) S.peak = S.viewers;
     save();
@@ -708,9 +728,115 @@ tr.shown td:first-child{box-shadow:inset 4px 0 0 var(--ink)}
     document.getElementById('peakNum').textContent = S.peak;
   }, 5000);
 
-  if (S.timer.running) startTick();
-  if (ssGet(AUTH_KEY) === '1') enterPanel();
+  /* Firebase 모듈에서 쓰는 함수 공개 */
+  A.getS = function(){ return S; };
+  A.render = function(){ if (S.timer.running) startTick(); else stopTick(); render(); };
+  A.enter = enterPanel;
+  A.gateError = gateError;
+  A.say = say;
+  A.toMock = function(msg){   /* Firebase 를 불러오지 못하면 목업으로 */
+    A.fb = false; S = load();
+    document.getElementById('gateNote').textContent = msg + ' · 시제품 모드(1234)로 동작';
+  };
+  if (A.fb) {
+    S = seed(); S.help = []; S.questions = []; S.reviews = []; S.log = []; S.viewers = 0; S.peak = 0;   /* 서버 값이 올 때까지 빈 상태 */
+    document.getElementById('gateNote').textContent = 'Firebase 로그인 · 강사 목록(admins)에 등록된 계정만 입장';
+    document.getElementById('emailLbl').textContent = '이메일';
+    document.getElementById('pwLbl').textContent = '비밀번호';
+    document.getElementById('pw').removeAttribute('inputmode');
+    document.getElementById('modeBadge').textContent = 'Firebase 연결';
+    document.getElementById('resetDemo').hidden = true;
+    document.querySelectorAll('.mock').forEach(function(m){ m.hidden = true; });
+    document.getElementById('connChip').textContent = '○ 연결 중';
+  } else {
+    if (S.timer.running) startTick();
+    if (ssGet(AUTH_KEY) === '1') enterPanel();
+  }
 })();
+</script>
+
+<!-- ===== Firebase 모드 (firebase-config.js 를 채우면 자동 실행) =====
+  읽기: state · timer · qa · materials · review · help · questions · reviews · log · viewers 구독 → S 갱신 → 다시 그림
+  쓰기: 버튼·스위치로 S 가 바뀌면 save() → onSave() 가 서버 값과 비교해 바뀐 경로만 update (강사 권한 · 규칙이 다시 검사) -->
+<script type="module">
+const A = window.ADMIN;
+if (A.fb) {
+  try {
+    const mod = await import('./firebase-sync.js');
+    connect(mod.createSync(window.FIREBASE_CONFIG, window.DECK_ID || 'mine-course-1014'));
+  } catch (e) {
+    A.toMock('Firebase 불러오기 실패');
+  }
+}
+
+function connect(sync){
+  let offset = 0, subscribed = false;
+  const srv = {};   /* 서버에서 마지막으로 받은 값 (바뀐 것만 쓰기 위한 비교용) */
+  const chip = document.getElementById('connChip');
+  sync.onServerOffset((o) => { offset = o; });
+  sync.onConnection((on) => { chip.textContent = on ? '● 연결' : '○ 끊김'; chip.classList.toggle('on', on); });
+
+  A.login = (email, pw) => sync.login(email, pw).catch(() => A.gateError('로그인 실패 · 이메일·비밀번호 확인'));
+  A.logout = () => sync.logout();
+  sync.onAdmin((admin, user) => {
+    if (admin) { subscribe(); A.enter(); }
+    else if (user) { A.gateError('강사 목록(admins)에 없는 계정'); sync.logout(); }
+  });
+
+  const S = () => A.getS();
+  const list = (obj, map) => Object.keys(obj || {}).map((id) => map(id, obj[id]));
+  function subscribe(){
+    if (subscribed) return; subscribed = true;
+    sync.onState((st) => { if (!st) return; srv.state = st; Object.assign(S(), { slide: st.slide | 0, lock: !!st.locked, pdf: !!st.pdf }); A.render(); });
+    sync.onPath('timer', (t) => {
+      srv.timer = t; if (!t) return;
+      S().timer = { minutes: t.minutes, remaining: t.remainSec, running: !!t.running, label: t.label || '실습', endAt: t.running ? t.endAt - offset : null };
+      A.render();
+    });
+    sync.onPath('qa', (q) => { srv.qa = q || {}; S().qa = !!srv.qa.open; S().showId = srv.qa.showId || null; A.render(); });
+    sync.onPath('materials', (m) => { srv.materials = m || {}; S().materials = !!srv.materials.open; A.render(); });
+    sync.onPath('review', (r) => { srv.review = r || {}; S().review = !!srv.review.open; A.render(); });
+    sync.onPath('help', (h) => {
+      srv.help = h || {};
+      S().help = list(h, (id, v) => ({ id, seat: v.seat, at: v.createdAt - offset, done: !!v.done })).sort((a, b) => a.at - b.at);
+      A.render();
+    });
+    sync.onPath('questions', (q) => {
+      srv.questions = q || {};
+      S().questions = list(q, (id, v) => ({ id, text: v.text, at: v.createdAt - offset, status: v.status })).sort((a, b) => a.at - b.at);
+      A.render();
+    });
+    sync.onPath('reviews', (r) => {
+      srv.reviews = r || {};
+      S().reviews = list(r, (id, v) => ({ id, star: v.rating, text: v.text, approved: !!v.approved, at: v.createdAt })).sort((a, b) => a.at - b.at);
+      A.render();
+    });
+    sync.onPath('log', (l) => { srv.log = l || {}; S().log = list(l, (id, v) => ({ id, ...v })).sort((a, b) => (a.date < b.date ? 1 : -1)); A.render(); });
+    sync.onViewers((n) => { if (n == null) return; S().viewers = n; if (n > S().peak) S().peak = n; A.render(); });
+  }
+
+  /* 화면에서 S 가 바뀌면 서버로 · 컬렉션은 바뀐 항목만, 화면에서 사라진 항목은 삭제 */
+  A.onSave = (s) => {
+    const u = {};
+    u['state/slide'] = s.slide; u['state/locked'] = !!s.lock; u['state/pdf'] = !!s.pdf; u['state/updatedAt'] = Date.now() + offset;
+    u['timer'] = { minutes: s.timer.minutes, remainSec: s.timer.remaining, running: !!s.timer.running,
+      endAt: s.timer.running ? s.timer.endAt + offset : 0, label: s.timer.label || '실습' };
+    const shown = s.questions.find((q) => q.id === s.showId);
+    u['qa/open'] = !!s.qa; u['qa/showId'] = shown ? s.showId : ''; u['qa/showText'] = shown ? shown.text : '';
+    u['materials/open'] = !!s.materials; u['review/open'] = !!s.review;
+    diff('help', s.help, srv.help, (h) => ({ done: h.done }), u);
+    diff('questions', s.questions, srv.questions, (q) => ({ status: q.status }), u);
+    diff('reviews', s.reviews, srv.reviews, (r) => ({ approved: r.approved }), u);
+    s.log.forEach((l) => { if (!l.id) { l.id = 'L' + Date.now().toString(36); u['log/' + l.id] = { date: l.date, peakViewers: l.peakViewers, questions: l.questions, reviews: l.reviews }; } });
+    sync.adminUpdate(u).catch(() => A.say('저장 실패 · 강사 권한·규칙 확인'));
+  };
+  function diff(path, items, server, fields, u){
+    server = server || {};
+    const ids = new Set(items.map((x) => x.id));
+    items.forEach((x) => { if (!server[x.id]) return; const f = fields(x);   /* 서버에 없는 항목은 쓰지 않음 (불완전한 값 방지) */ Object.keys(f).forEach((k) => { if (!server[x.id] || server[x.id][k] !== f[k]) u[path + '/' + x.id + '/' + k] = f[k]; }); });
+    Object.keys(server).forEach((id) => { if (!ids.has(id)) u[path + '/' + id] = null; });
+  }
+}
 </script>
 </body>
 </html>

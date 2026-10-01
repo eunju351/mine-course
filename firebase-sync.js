@@ -7,7 +7,7 @@
  * ============================================================ */
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js';
 import {
-  getDatabase, ref, get, set, update, push, onValue, onDisconnect, serverTimestamp
+  getDatabase, ref, get, set, update, push, remove, onValue, onDisconnect, serverTimestamp
 } from 'https://www.gstatic.com/firebasejs/12.19.0/firebase-database.js';
 import {
   getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged
@@ -76,6 +76,31 @@ export function createSync(cfg, deckId) {
     /* 관리자·프로젝션 화면만 구독 권장 - 모든 청중이 구독하면 접속자² 만큼 전송량 증가 */
     onViewers(cb) {
       return onValue(ref(db, base + '/viewers'), (s) => cb(s.size), () => cb(null));
+    },
+
+    /* ---- 관리자 제어판 · 청중 위젯용 (AI 동화책 출판 강의 추가분) ----
+       경로는 decks/{덱 이름}/ 아래 상대 경로 · 권한은 database.rules.json 이 판단 */
+    /* 서버 시각 - 내 시각 (ms) · 타이머 끝 시각(endAt)을 기기마다 같게 계산 */
+    onServerOffset(cb) {
+      return onValue(ref(db, '.info/serverTimeOffset'), (s) => cb(Number(s.val()) || 0));
+    },
+    /* 경로 구독 · 권한이 없으면 null 전달 */
+    onPath(sub, cb) {
+      return onValue(ref(db, base + '/' + sub), (s) => cb(s.val()), () => cb(null));
+    },
+    /* 강사 전용: 여러 경로 한 번에 쓰기 ({ 'qa/open': true, 'timer': {...} }) */
+    adminUpdate(values) {
+      if (!isAdmin) return Promise.reject(new Error('not-admin'));
+      return update(ref(db, base), values);
+    },
+    adminRemove(sub) {
+      if (!isAdmin) return Promise.reject(new Error('not-admin'));
+      return remove(ref(db, base + '/' + sub));
+    },
+    /* 청중: 새 항목 추가 (질문·도움 요청·후기) · 열림 여부와 값 형식은 규칙이 검사 */
+    add(sub, value) {
+      const r = push(ref(db, base + '/' + sub));
+      return set(r, value).then(() => r.key);
     }
   };
 }

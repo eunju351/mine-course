@@ -25,6 +25,81 @@
             ".write": "$vid.length <= 30",
             ".validate": "newData.isNumber()"
           }
+        },
+        "timer": {
+          ".read": true,
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          ".validate": "newData.hasChildren(['running', 'remainSec', 'endAt', 'minutes', 'label'])",
+          "running": { ".validate": "newData.isBoolean()" },
+          "remainSec": { ".validate": "newData.isNumber() && newData.val() > -36000 && newData.val() < 36000" },
+          "endAt": { ".validate": "newData.isNumber()" },
+          "minutes": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 180" },
+          "label": { ".validate": "newData.isString() && newData.val().length <= 60" },
+          "$other": { ".validate": false }
+        },
+        "qa": {
+          ".read": true,
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          "open": { ".validate": "newData.isBoolean()" },
+          "showId": { ".validate": "newData.isString() && newData.val().length <= 40" },
+          "showText": { ".validate": "newData.isString() && newData.val().length <= 200" },
+          "$other": { ".validate": false }
+        },
+        "materials": {
+          ".read": true,
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          "open": { ".validate": "newData.isBoolean()" },
+          "$other": { ".validate": false }
+        },
+        "review": {
+          ".read": true,
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          "open": { ".validate": "newData.isBoolean()" },
+          "$other": { ".validate": false }
+        },
+        "help": {
+          ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          "$id": {
+            ".write": "!data.exists() && newData.exists()",
+            ".validate": "newData.hasChildren(['seat', 'createdAt', 'done']) && (data.exists() || newData.child('done').val() === false)",
+            "seat": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 10" },
+            "createdAt": { ".validate": "newData.isNumber()" },
+            "done": { ".validate": "newData.isBoolean()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "questions": {
+          ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          "$id": {
+            ".write": "!data.exists() && newData.exists() && root.child('decks').child($deck).child('qa').child('open').val() === true",
+            ".validate": "newData.hasChildren(['text', 'createdAt', 'status']) && (data.exists() || newData.child('status').val() === '새 질문')",
+            "text": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 200" },
+            "createdAt": { ".validate": "newData.isNumber()" },
+            "status": { ".validate": "newData.val() === '새 질문' || newData.val() === '읽음' || newData.val() === '답변'" },
+            "$other": { ".validate": false }
+          }
+        },
+        "reviews": {
+          ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          "$id": {
+            ".write": "!data.exists() && newData.exists() && root.child('decks').child($deck).child('review').child('open').val() === true",
+            ".validate": "newData.hasChildren(['text', 'rating', 'createdAt', 'approved']) && (data.exists() || newData.child('approved').val() === false)",
+            "text": { ".validate": "newData.isString() && newData.val().length >= 1 && newData.val().length <= 300" },
+            "rating": { ".validate": "newData.isNumber() && newData.val() >= 1 && newData.val() <= 5" },
+            "createdAt": { ".validate": "newData.isNumber()" },
+            "approved": { ".validate": "newData.isBoolean()" },
+            "$other": { ".validate": false }
+          }
+        },
+        "log": {
+          ".read": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          ".write": "auth != null && root.child('admins').child(auth.uid).val() === true",
+          "$entry": {
+            ".validate": "newData.hasChildren(['date', 'peakViewers', 'questions', 'reviews'])"
+          }
         }
       }
     }

@@ -188,7 +188,32 @@ html.is-screen #nav, html.is-screen #progress{display:none}
 .conn{border:1px solid #444;border-radius:99px;padding:4px 12px;font-size:12.5px;font-weight:700;color:#DDDDDD;white-space:nowrap}
 #nav button[aria-pressed="true"]{background:#FFFFFF;color:#111111}
 #nav [hidden]{display:none!important}
-@media (max-width:760px){ #connBadge{display:none} }
+@media (max-width:760px){ #connBadge{display:none} #modeBadge{max-width:9.5em;overflow:hidden;text-overflow:ellipsis} }
+/* 청중 위젯: 타이머 · 도움·질문·후기 버튼 · 띄운 질문 (메뉴 바 위에 따로 띄움) */
+.aud-bar{position:fixed;left:12px;bottom:calc(var(--nav-h) + 10px);z-index:210;display:flex;gap:8px;flex-wrap:wrap}
+.aud-bar button{min-height:44px;min-width:44px;padding:0 14px;border-radius:99px;border:none;background:#FFFFFF;color:#111111;
+  font-size:14px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+.aud-bar button:focus-visible{outline:3px solid #F6C744;outline-offset:2px}
+.live-timer{position:fixed;right:12px;bottom:calc(var(--nav-h) + 10px);z-index:210;background:#111111;color:#FFFFFF;border:2px solid #FFFFFF;
+  border-radius:99px;padding:8px 16px;font-size:16px;font-weight:900;font-variant-numeric:tabular-nums;box-shadow:0 4px 14px rgba(0,0,0,.35);white-space:nowrap}
+.live-timer.warn{background:#FFFFFF;color:#B71C1C;border-color:#B71C1C}
+.qa-show{position:fixed;left:50%;top:12px;transform:translateX(-50%);z-index:290;width:min(760px,calc(100% - 24px));background:#111111;color:#FFFFFF;
+  border:2px solid #F6C744;border-radius:14px;padding:12px 16px;font-size:16px;font-weight:700;line-height:1.5;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.qa-show b{display:block;font-size:12.5px;color:#F6C744;letter-spacing:.06em}
+.live-timer{max-width:min(46vw, 440px);overflow:hidden;text-overflow:ellipsis}
+@media (max-width:760px){
+  .live-timer{bottom:calc(var(--nav-h) + 64px);max-width:calc(100% - 24px)}   /* 휴대폰: 버튼 줄 위로 */
+  .aud-bar button{padding:0 12px}
+}
+html.is-screen .live-timer{top:12px;bottom:auto;font-size:22px;max-width:60vw}
+html.is-screen .aud-bar{display:none}
+.aud-bar[hidden], .live-timer[hidden], .qa-show[hidden]{display:none}
+.login-box textarea{font:inherit;font-weight:500;border:1px solid #BBBBBB;border-radius:8px;padding:10px 12px;min-height:96px;resize:vertical}
+.login-box .stars{display:flex;gap:6px;flex-wrap:wrap;border:none;padding:0}
+.login-box .stars label{flex-direction:row;align-items:center;gap:4px;min-height:44px;padding:0 10px;border:1px solid #BBBBBB;border-radius:8px;cursor:pointer;font-weight:800}
+.login-box .stars input{min-height:auto}
+.login-box .hint2{font-size:13px;color:#555555}
+.login-box .ok{color:#1B5E20;font-size:13px;font-weight:800;min-height:1.2em}
 .fb-banner{position:fixed;left:0;right:0;top:0;z-index:300;background:#F6C744;color:#111111;font-size:14px;font-weight:700;line-height:1.4;text-align:center;padding:8px 12px}
 .fb-banner[hidden]{display:none}
 .login{position:fixed;inset:0;z-index:600;background:rgba(10,10,10,.8);display:flex;align-items:center;justify-content:center;padding:16px}
@@ -914,6 +939,24 @@ html.is-screen #nav, html.is-screen #progress{display:none}
 
 <div id="fbBanner" class="fb-banner" hidden>Firebase 설정 전 · 자유 열람 모드 · firebase-config.js 입력 후 동기화</div>
 
+<!-- 청중 위젯 · Firebase 연결 때만 표시 -->
+<div class="qa-show" id="qaShow" role="status" aria-live="polite" hidden><b>함께 볼 질문</b><span id="qaShowText"></span></div>
+<div class="live-timer" id="liveTimer" role="timer" aria-live="off" hidden></div>
+<div class="aud-bar" id="audBar" hidden>
+  <button type="button" id="helpBtn">🙋 도움 요청</button>
+  <button type="button" id="askBtn" hidden>❓ 질문</button>
+  <button type="button" id="reviewBtn" hidden>⭐ 후기</button>
+</div>
+<div class="login" id="audDlg" hidden role="dialog" aria-modal="true" aria-labelledby="audTitle">
+  <form class="login-box" id="audForm">
+    <h2 id="audTitle">도움 요청</h2>
+    <div id="audFields"></div>
+    <p class="err" id="audErr" role="alert"></p>
+    <p class="ok" id="audOk" role="status"></p>
+    <div class="row"><button type="submit" class="primary" id="audSend">보내기</button><button type="button" id="audClose">닫기</button></div>
+  </form>
+</div>
+
 <div class="login" id="login" hidden role="dialog" aria-modal="true" aria-labelledby="loginTitle">
   <form class="login-box" id="loginForm">
     <h2 id="loginTitle">강사 로그인</h2>
@@ -1008,7 +1051,7 @@ html.is-screen #nav, html.is-screen #progress{display:none}
 
   document.addEventListener('keydown', function(e){
     var t = e.target;
-    if (t && t.closest && t.closest('input, textarea, select')) return;
+    if (t && t.closest && t.closest('input, textarea, select, .login')) return;
     if (gridOverlay.classList.contains('open')) {
       if (e.key === 'Escape' || e.key === 'g' || e.key === 'G') { closeGrid(); }
       return;
@@ -1248,7 +1291,84 @@ async function start(){
   });
   $('lockBtn').addEventListener('click', () => sync.setLock(!D.locked).catch(() => flash('저장 실패')));
   $('pdfBtn').addEventListener('click', () => sync.setPdf(!D.pdfOk).catch(() => flash('저장 실패')));
+  audience(sync);
   return true;
+}
+
+/* ---------- 청중 위젯: 타이머 · 띄운 질문 · 도움 요청 · 질문 · 후기 ----------
+   열림 여부는 관리자 제어판 스위치(qa.open · review.open)가 정하고, 서버 규칙도 같은 값으로 다시 검사 */
+function audience(sync){
+  let offset = 0, timer = null, qaOpen = false, reviewOpen = false, mode = 'help', opener = null;
+  sync.onServerOffset((o) => { offset = o; });
+  const fmt = (sec) => { const neg = sec < 0, a = Math.abs(sec), m = Math.floor(a / 60), s = a % 60; return (neg ? '+' : '') + m + ':' + (s < 10 ? '0' + s : s); };
+  function drawTimer(){
+    const el = $('liveTimer');
+    if (!timer || (!timer.running && timer.remainSec === timer.minutes * 60)) { el.hidden = true; return; }
+    const sec = timer.running ? Math.round((timer.endAt - (Date.now() + offset)) / 1000) : timer.remainSec;
+    el.hidden = false;
+    el.textContent = '⏱ ' + fmt(sec) + (timer.label ? ' · ' + timer.label : '') + (timer.running ? '' : ' · 정지');
+    el.classList.toggle('warn', sec <= 60);
+  }
+  setInterval(drawTimer, 500);
+  sync.onPath('timer', (t) => { timer = t; drawTimer(); });
+  sync.onPath('qa', (q) => {
+    qaOpen = !!(q && q.open);
+    const text = (q && q.showText) || '';
+    $('qaShowText').textContent = text; $('qaShow').hidden = !text;
+    bar();
+  });
+  sync.onPath('review', (r) => { reviewOpen = !!(r && r.open); bar(); });
+  function bar(){
+    const aud = !D.isAdmin && !D.isScreen;
+    $('audBar').hidden = !aud;
+    $('askBtn').hidden = !qaOpen;
+    $('reviewBtn').hidden = !reviewOpen;
+    if (!$('audDlg').hidden && ((mode === 'ask' && !qaOpen) || (mode === 'review' && !reviewOpen))) closeDlg();
+  }
+  sync.onAdmin(() => bar());
+
+  const FORMS = {
+    help: { title: '도움 요청', html: '<label>자리 번호<input id="fSeat" maxlength="10" required placeholder="예: B-3"></label><p class="hint2">강사가 자리로 찾아감 · 이름은 저장하지 않음</p>' },
+    ask: { title: '질문 보내기', html: '<label>질문 (200자 이내)<textarea id="fText" maxlength="200" required></textarea></label><p class="hint2">이름 없이 저장 · 강사가 골라서 화면에 띄울 수 있음</p>' },
+    review: { title: '후기 남기기', html: '<fieldset class="stars"><legend class="hint2">별점</legend>' + [5,4,3,2,1].map((n) => '<label><input type="radio" name="fStar" value="' + n + '"' + (n === 5 ? ' checked' : '') + '>' + '★'.repeat(n) + '</label>').join('') + '</fieldset><label>한 줄 후기 (300자 이내)<textarea id="fText" maxlength="300" required></textarea></label><p class="hint2">이름 없이 저장 · 공개는 강사 승인 뒤</p>' }
+  };
+  function openDlg(m, btn){
+    mode = m; opener = btn;
+    $('audTitle').textContent = FORMS[m].title; $('audFields').innerHTML = FORMS[m].html;
+    $('audErr').textContent = ''; $('audOk').textContent = ''; $('audSend').disabled = false;
+    $('audDlg').hidden = false;
+    const first = $('audFields').querySelector('input:not([type=radio]), textarea'); if (first) first.focus();
+  }
+  function closeDlg(){ $('audDlg').hidden = true; if (opener && opener.focus) opener.focus(); }
+  $('helpBtn').addEventListener('click', (e) => openDlg('help', e.currentTarget));
+  $('askBtn').addEventListener('click', (e) => openDlg('ask', e.currentTarget));
+  $('reviewBtn').addEventListener('click', (e) => openDlg('review', e.currentTarget));
+  $('audClose').addEventListener('click', closeDlg);
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !$('audDlg').hidden) closeDlg(); });
+  $('audForm').addEventListener('submit', async (e) => {
+    e.preventDefault(); $('audErr').textContent = ''; $('audOk').textContent = '';
+    const now = Date.now() + offset;
+    let path, value;
+    if (mode === 'help') {
+      const seat = $('fSeat').value.trim().slice(0, 10);
+      if (!seat) { $('audErr').textContent = '자리 번호 입력 필요'; return; }
+      path = 'help'; value = { seat, createdAt: now, done: false };
+    } else {
+      const text = $('fText').value.trim();
+      if (!text) { $('audErr').textContent = '내용 입력 필요'; return; }
+      if (mode === 'ask') { path = 'questions'; value = { text: text.slice(0, 200), createdAt: now, status: '새 질문' }; }
+      else { const star = document.querySelector('input[name=fStar]:checked'); path = 'reviews'; value = { text: text.slice(0, 300), rating: star ? Number(star.value) : 5, createdAt: now, approved: false }; }
+    }
+    $('audSend').disabled = true;
+    try {
+      await sync.add(path, value);
+      $('audOk').textContent = '보내기 완료 ✓';
+      setTimeout(closeDlg, 1200);
+    } catch (err) {
+      $('audSend').disabled = false;
+      $('audErr').textContent = mode === 'help' ? '보내기 실패 · 다시 시도' : '지금은 받지 않는 중 · 강사 안내 대기';
+    }
+  });
 }
 
 $('lgClose').addEventListener('click', () => { $('login').hidden = true; });
